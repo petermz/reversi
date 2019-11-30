@@ -39,7 +39,13 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
-# extra-deps: []
+extra-deps:
+- gtk3-0.15.3@sha256:876a73ecc39fefbb92caa794d83140f3fff5a810e1c7a61ab4b4dba5ca5a1375,19475
+- cairo-0.13.6.1@sha256:6ec483dc48865d55e903aacb8740aee2d4831b8c0f34eebbf7a323edafdabb37,4075
+- gio-0.13.6.1@sha256:88871471178082e6aa81199c8cae3b2b3f5dbfd6ad4c83ec48c0779fbee361e8,3100
+- glib-0.13.7.1@sha256:b517bbbc46f8bd72a8c97fb1d6769705a9b0d006f7cff8b3dc85948511817b11,3120
+- gtk2hs-buildtools-0.13.5.4@sha256:0f18b0103fa7a3cbc28edc6a97bdaf08e1f9bd273ef26d2ad498630ec6d0ac9c,5288
+- pango-0.13.6.1@sha256:177c9b6d865dc8f1634742497c6807a7c37a11e86c0dc93fbc047981d546738a,3881
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
