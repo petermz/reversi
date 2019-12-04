@@ -21,8 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- containers >= 0.6
+- containers >= 0.6 && < 0.7
 - gtk3 >= 0.15
+- cairo >= 0.13
 
 library:
   source-dirs: src

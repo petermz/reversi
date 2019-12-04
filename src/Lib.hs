@@ -1,6 +1,7 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib (
+  Match(..), MatchSummary(..), Piece(..), Position, Tile(..),
+  startMatch, move, summary
+) where
 
 import Control.Monad
 import qualified Data.Map as M
@@ -11,38 +12,16 @@ data Piece = Black | White deriving (Eq, Show)
 data Tile = Tile Int Int deriving (Eq, Ord, Show)
 data Move = Move Piece Tile deriving Show
 type Position = M.Map Tile Piece
-data Match = Match Position Piece deriving Show -- Piece denotes the side that moves next
-
-isValidTile :: Tile -> Bool
-isValidTile (Tile x y) = x >= 0 && x < 8 && y >= 0 && y < 8
-
-moveDirections = [
-    \(Tile x y) -> Tile (x-1) y,
-    \(Tile x y) -> Tile (x+1) y,
-    \(Tile x y) -> Tile x (y-1),
-    \(Tile x y) -> Tile x (y+1),
-    \(Tile x y) -> Tile (x-1) (y-1),
-    \(Tile x y) -> Tile (x-1) (y+1),
-    \(Tile x y) -> Tile (x+1) (y-1),
-    \(Tile x y) -> Tile (x+1) (y+1)
-  ]
-
-tryMove' :: Position -> Piece -> Tile -> (Tile -> Tile) -> Bool -> [Tile] -> [Tile]
-tryMove' pos side tile tileFunc isMoving takenTiles =
-  if isValidTile tile'
-    then case M.lookup tile' pos of
-      Nothing -> []
-      Just piece | piece == side -> if isMoving then takenTiles else []
-      Just _ -> tryMove' pos side tile' tileFunc True (tile' : takenTiles)
-    else []
-  where tile' = tileFunc tile
-
-tryMove :: Position -> Move -> [Tile]
-tryMove pos (Move side tile) = case M.lookup tile pos of
-  Just _ -> []
-  Nothing -> do
-    tileFunc <- moveDirections
-    tryMove' pos side tile tileFunc False [tile]
+data Match = Match
+  Position
+  Piece     -- denotes the side that moves next
+  [Tile]    -- valid moves for that side
+  deriving Show
+data MatchSummary = MatchSummary
+  Bool      -- True if match is over
+  Int       -- number of white pieces
+  Int       -- number of black pieces
+  deriving Show
 
 isValidMove :: Position -> Move -> Bool
 isValidMove pos move = not $ null $ tryMove pos move
@@ -55,53 +34,54 @@ validMoves pos side = do
   guard $ isValidMove pos $ Move side tile
   [tile]
 
+tryMove :: Position -> Move -> [Tile]
+tryMove pos (Move side tile) = case M.lookup tile pos of
+  Just _ -> []
+  Nothing -> do
+    tileFunc <- moveDirections
+    tryMove' pos side tile tileFunc False [tile]
+    where moveDirections = [ \(Tile x y) -> Tile (x + dx) (y + dy)
+            | dx <- [-1..1]
+            , dy <- [-1..1]
+            , not (dx == 0 && dy == 0) ]
+
+tryMove' :: Position -> Piece -> Tile -> (Tile -> Tile) -> Bool -> [Tile] -> [Tile]
+tryMove' pos side tile tileFunc isMoving takenTiles =
+  if isValidTile tile'
+    then case M.lookup tile' pos of
+      Nothing -> []
+      Just piece | piece == side -> if isMoving then takenTiles else []
+      Just _ -> tryMove' pos side tile' tileFunc True (tile' : takenTiles)
+    else []
+  where tile' = tileFunc tile
+        isValidTile (Tile x y) = x >= 0 && x < 8 && y >= 0 && y < 8
+
 applyMove :: Position -> Move -> Maybe Position
 applyMove pos move@(Move side _) = case tryMove pos move of
   [] -> Nothing
   takenTiles -> Just $ foldr (`M.insert` side) pos takenTiles
 
-initialPosition :: Position
-initialPosition = M.fromList [
-  (Tile 3 3, Black), (Tile 3 4, White), (Tile 4 3, White), (Tile 4 4, Black)]
-
-dumpPosition :: Position -> [Tile] -> IO ()
-dumpPosition pos moves = mapM_ (printRow pos) [7,6..0]
-  where printRow pos y = putStrLn $ fmap (\x -> printTile pos x y) [0..7]
-        printTile pos x y = case M.lookup (Tile x y) pos of
-          Nothing -> if elem (Tile x y) moves then '\x00d7' else '.'
-          Just Black -> '\x26c0'
-          Just White -> '\x26c2'
-
 opposite :: Piece -> Piece
 opposite White = Black
 opposite Black = White
 
-play :: Position -> Piece -> Bool -> IO ()
-play pos side opponentPassed =
-  let moves = validMoves pos side
-  in if null moves
-    then if opponentPassed
-      then endMatch pos
-      else play pos (opposite side) True
-    else do
-      dumpPosition pos moves
-      tile <- getMove moves
-      case applyMove pos $ Move side tile of
-        Nothing -> fail "Should not happen"
-        Just pos' -> play pos' (opposite side) False
-  where endMatch pos =
-          let whites = M.size $ M.filter (== White) pos
-              blacks = M.size pos - whites
-          in do
-            dumpPosition pos []
-            if whites > blacks
-              then putStrLn $ "Whites won " ++ show whites ++ " by " ++ show blacks
-              else putStrLn $ "Blacks won " ++ show blacks ++ " by " ++ show whites
-        getMove moves = do
-          putStr "Input move (x y): "
-          [x, ' ', y] <- getLine
-          let tile = Tile (ord x - ord '0') (ord y - ord '0')
-          if elem tile moves then return tile else getMove moves
+startMatch :: Match
+startMatch = Match pos White $ validMoves pos White
+  where pos = M.fromList [
+          (Tile 3 3, White), (Tile 3 4, Black), (Tile 4 3, Black), (Tile 4 4, White)]
 
-someFunc :: IO ()
-someFunc = play initialPosition White False
+move :: Match -> Tile -> Match
+move match@(Match pos side _) tile =
+  case applyMove pos $ Move side tile of
+    Nothing -> match
+    Just pos' -> Match pos' side' moves'
+      where (side', moves') = if null opponentMoves
+              then (side, validMoves pos' side)
+              else (opponent, opponentMoves)
+            opponent = opposite side
+            opponentMoves = validMoves pos' opponent
+
+summary :: Match -> MatchSummary
+summary (Match pos side moves) = MatchSummary (null moves) whites blacks
+  where whites = M.size $ M.filter (== White) pos
+        blacks = M.size pos - whites
