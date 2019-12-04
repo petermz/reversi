@@ -1,7 +1,7 @@
 module Main where
 
 import Data.IORef
-import Lib
+import Game
 import UI
 
 main = newIORef startMatch >>= showGUI

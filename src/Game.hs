@@ -1,4 +1,4 @@
-module Lib (
+module Game (
   Match(..), MatchSummary(..), Piece(..), Position, Tile(..),
   startMatch, move, summary
 ) where

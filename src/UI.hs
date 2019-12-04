@@ -6,7 +6,7 @@ import Data.IORef
 import qualified Data.Map as Map
 import Graphics.UI.Gtk hiding (get, rectangle)
 import Graphics.Rendering.Cairo
-import Lib
+import Game
 
 tile :: Num a => a
 tile = 80
