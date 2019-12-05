@@ -34,5 +34,7 @@
     <orderEntry type="library" name="filepath-1.4.2.1" level="project" />
     <orderEntry type="library" name="time-1.8.0.2" level="project" />
     <orderEntry type="library" name="unix-2.7.2.2" level="project" />
+    <orderEntry type="library" name="vector-0.12.0.3" level="project" />
+    <orderEntry type="library" name="primitive-0.6.4.0" level="project" />
   </component>
 </module>

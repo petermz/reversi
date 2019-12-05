@@ -5,14 +5,14 @@ module Game (
 ) where
 
 import Control.Monad
-import qualified Data.Map as M
+import qualified Data.Vector as Vec
 import Data.Char (ord)
 import Data.Maybe (fromJust)
 
 data Piece = Black | White deriving (Eq, Show)
 data Tile = Tile Int Int deriving (Eq, Ord, Show)
 data Move = Move Piece Tile deriving Show
-type Position = M.Map Tile Piece
+type Position = Vec.Vector (Maybe Piece)
 data Match = Match
   Position
   Piece     -- denotes the side that moves next
@@ -40,8 +40,10 @@ moveDirections = [ \(Tile x y) -> Tile (x + dx) (y + dy)
   , dy <- [-1..1]
   , not (dx == 0 && dy == 0) ]
 
+toIndex (Tile x y) = x + y * 8
+
 tryMove :: Position -> Move -> [Tile]
-tryMove pos (Move side tile) = case M.lookup tile pos of
+tryMove pos (Move side tile) = case pos Vec.! toIndex tile of
   Just _ -> []
   Nothing -> do
     tileFunc <- moveDirections
@@ -50,7 +52,7 @@ tryMove pos (Move side tile) = case M.lookup tile pos of
 tryMove' :: Position -> Piece -> Tile -> (Tile -> Tile) -> Bool -> [Tile] -> [Tile]
 tryMove' pos side tile tileFunc isMoving takenTiles =
   if isValidTile tile'
-    then case M.lookup tile' pos of
+    then case pos Vec.! toIndex tile' of
       Nothing -> []
       Just piece | piece == side -> if isMoving then takenTiles else []
       Just _ -> tryMove' pos side tile' tileFunc True (tile' : takenTiles)
@@ -61,7 +63,7 @@ tryMove' pos side tile tileFunc isMoving takenTiles =
 applyMove :: Position -> Move -> Maybe Position
 applyMove pos move@(Move side _) = case tryMove pos move of
   [] -> Nothing
-  takenTiles -> Just $ foldr (`M.insert` side) pos takenTiles
+  takenTiles -> Just $ pos Vec.// map (\tile -> (toIndex tile, Just side)) takenTiles
 
 opposite :: Piece -> Piece
 opposite White = Black
@@ -69,8 +71,12 @@ opposite Black = White
 
 startMatch :: Match
 startMatch = Match pos White $ validMoves pos White
-  where pos = M.fromList [
-          (Tile 3 3, White), (Tile 3 4, Black), (Tile 4 3, Black), (Tile 4 4, White)]
+  where pos = Vec.fromList $
+          replicate 27 Nothing ++
+          [Just White, Just Black] ++
+          replicate 6 Nothing ++
+          [Just Black, Just White] ++
+          replicate 27 Nothing
 
 move :: Match -> Tile -> Match
 move match@(Match pos side _) tile =
@@ -88,5 +94,5 @@ isOver (Match _ _ moves) = null moves
 
 summary :: Match -> MatchSummary
 summary match@(Match pos _ moves) = MatchSummary (isOver match) whites blacks
-  where whites = M.size $ M.filter (== White) pos
-        blacks = M.size pos - whites
+  where whites = Vec.length $ Vec.filter (== Just White) pos
+        blacks = Vec.length $ Vec.filter (== Just Black) pos

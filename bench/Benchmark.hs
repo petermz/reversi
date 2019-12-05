@@ -18,6 +18,6 @@ autoPlay p1 p2 match =
         mv = fromMaybe (error "Should not happen") $ p1 match
 
 main =
-  let players = nMover <$> [1..30]
+  let players = nMover <$> [1..50]
       games = autoPlay <$> players <*> players
   in print $ all isOver $ map ($ startMatch) games

@@ -3,4 +3,5 @@
 reversi.cabal
 *~
 *.lock
+*.patch
 *.prof

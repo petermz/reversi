@@ -3,7 +3,7 @@ module UI (showGUI) where
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.Vector as Vec
 import Graphics.UI.Gtk hiding (get, rectangle)
 import Graphics.Rendering.Cairo
 import Game
@@ -80,15 +80,17 @@ drawCanvas canvas white black positionRef = do
     stroke) [1..7]
 
   Match pos side moves <- liftIO $ readIORef positionRef
-  mapM_ (\(Tile x y, piece) ->
+  mapM_ (\(i, maybePiece) -> case maybePiece of
+    Nothing -> return ()
+    Just piece ->
       let pixbuf = if piece == White then white else black
-      in drawPiece x y pixbuf
-    ) $ Map.toList pos
+      in drawPiece (divMod i 8) pixbuf
+    ) $ zip [0..] (Vec.toList pos)
 
   mapM_ (\(Tile x y) -> drawHint x y) moves
 
-drawPiece :: Int -> Int -> Pixbuf -> Render ()
-drawPiece x y pixbuf = do
+drawPiece :: (Int, Int) -> Pixbuf -> Render ()
+drawPiece (y,x) pixbuf = do
   save
   translate (toTopLeft x) (toTopLeft y)
   scale 0.25 0.25
