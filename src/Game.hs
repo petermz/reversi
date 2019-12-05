@@ -1,6 +1,7 @@
 module Game (
   Match(..), MatchSummary(..), Piece(..), Position, Tile(..),
-  startMatch, move, summary
+  startMatch, move, isOver, summary,
+  validMoves
 ) where
 
 import Control.Monad
@@ -34,16 +35,17 @@ validMoves pos side = do
   guard $ isValidMove pos $ Move side tile
   [tile]
 
+moveDirections = [ \(Tile x y) -> Tile (x + dx) (y + dy)
+  | dx <- [-1..1]
+  , dy <- [-1..1]
+  , not (dx == 0 && dy == 0) ]
+
 tryMove :: Position -> Move -> [Tile]
 tryMove pos (Move side tile) = case M.lookup tile pos of
   Just _ -> []
   Nothing -> do
     tileFunc <- moveDirections
     tryMove' pos side tile tileFunc False [tile]
-    where moveDirections = [ \(Tile x y) -> Tile (x + dx) (y + dy)
-            | dx <- [-1..1]
-            , dy <- [-1..1]
-            , not (dx == 0 && dy == 0) ]
 
 tryMove' :: Position -> Piece -> Tile -> (Tile -> Tile) -> Bool -> [Tile] -> [Tile]
 tryMove' pos side tile tileFunc isMoving takenTiles =
@@ -81,7 +83,10 @@ move match@(Match pos side _) tile =
             opponent = opposite side
             opponentMoves = validMoves pos' opponent
 
+isOver :: Match -> Bool
+isOver (Match _ _ moves) = null moves
+
 summary :: Match -> MatchSummary
-summary (Match pos side moves) = MatchSummary (null moves) whites blacks
+summary match@(Match pos _ moves) = MatchSummary (isOver match) whites blacks
   where whites = M.size $ M.filter (== White) pos
         blacks = M.size pos - whites

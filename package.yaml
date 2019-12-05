@@ -49,3 +49,16 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - reversi
+
+benchmarks:
+  reversi-bench:
+    main:                Benchmark.hs
+    source-dirs:         bench
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-p
+    - -fprof-auto
+    - -fforce-recomp
+    dependencies:
+    - reversi
