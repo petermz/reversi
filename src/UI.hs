@@ -79,13 +79,13 @@ drawCanvas canvas white black positionRef = do
     lineTo (margin + cell * i) (height - margin)
     stroke) [1..7]
 
-  Match pos side moves <- liftIO $ readIORef positionRef
+  Match (Position board _) side moves <- liftIO $ readIORef positionRef
   mapM_ (\(i, maybePiece) -> case maybePiece of
     Nothing -> return ()
     Just piece ->
       let pixbuf = if piece == White then white else black
       in drawPiece (divMod i 8) pixbuf
-    ) $ zip [0..] (Vec.toList pos)
+    ) $ zip [0..] (Vec.toList board)
 
   mapM_ (\(Tile x y) -> drawHint x y) moves
 
